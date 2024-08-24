@@ -8,6 +8,7 @@ uses
 type // Generic Response Type
   TRMAPIResponse<T> = record
     Data: T;
+    RawData: string;
     StatusCode: Integer;
     StatusText: string;
   end;
@@ -30,7 +31,9 @@ type // TRustMapsAPI Class
     constructor Create(const APIKey: string = '');
   public
   { API Methods }
+    // Maps
     function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<string>;
+    function GetMap(const MapID: string): TRMAPIResponse<string>;
   published
   { Published Properties }
     property APIKey: string read FAPIKey write FAPIKey;
@@ -52,6 +55,30 @@ begin
   // Assign API Key if provided
   if not FAPIKey.Trim.IsEmpty then
     FAPIKey := APIKey;
+end;
+
+function TRustMapsAPI.GetMap(const MapID: string): TRMAPIResponse<string>;
+begin
+  var rest := Self.SetupRest;
+  try
+    { Setup }
+    rest.Resource := '/v4/maps/{mapId}';
+    rest.Method := TRESTRequestMethod.rmGET;
+
+    // Params
+    rest.AddParameter('mapId', MapID, TRESTRequestParameterKind.pkURLSEGMENT);
+
+    { Execute }
+    rest.Execute;
+
+    { Response }
+    Result.RawData := rest.Response.Content;
+    Result.Data := rest.Response.Content;
+    Result.StatusCode := rest.Response.StatusCode;
+    Result.StatusText := rest.Response.StatusText;
+  finally
+    rest.Free;
+  end;
 end;
 
 function TRustMapsAPI.RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<string>;
@@ -83,6 +110,7 @@ begin
     rest.Execute;
 
     { Response }
+    Result.RawData := rest.Response.Content;
     Result.Data := rest.Response.Content;
     Result.StatusCode := rest.Response.StatusCode;
     Result.StatusText := rest.Response.StatusText;

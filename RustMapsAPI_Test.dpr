@@ -15,7 +15,7 @@ begin
   try
     api.APIKey := '';
 
-    var res := api.RequestMapGeneration(3500, 665438754, False);
+    var res := api.GetMap('dsfsdfdsfdsfdsf');
     Writeln(res.Data);
     Writeln(res.StatusCode.ToString);
     Writeln(res.StatusText);
