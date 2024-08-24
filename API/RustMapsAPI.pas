@@ -32,7 +32,7 @@ type // TRustMapsAPI Class
   public
   { API Methods }
     // Maps
-    function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<string>;
+    function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
     function GetMap(const MapID: string): TRMAPIResponse<string>;
   published
   { Published Properties }
@@ -81,7 +81,7 @@ begin
   end;
 end;
 
-function TRustMapsAPI.RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<string>;
+function TRustMapsAPI.RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
 begin
   var rest := Self.SetupRest;
   try
@@ -111,9 +111,18 @@ begin
 
     { Response }
     Result.RawData := rest.Response.Content;
-    Result.Data := rest.Response.Content;
     Result.StatusCode := rest.Response.StatusCode;
     Result.StatusText := rest.Response.StatusText;
+
+    // Parsed Data
+    if rest.Response.StatusCode = 201 then
+    begin
+      Result.Data.MapID := rest.Response.JSONValue.GetValue<string>('data.mapid');
+      Result.Data.QueuePosition := rest.Response.JSONValue.GetValue<Integer>('data.mapid');
+      Result.Data.State := rest.Response.JSONValue.GetValue<string>('data.state');
+    end
+    else if rest.Response.StatusCode = 409 then
+      Result.Data.MapID := rest.Response.JSONValue.GetValue<string>('data.id');
   finally
     rest.Free;
   end;
