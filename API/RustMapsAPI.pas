@@ -45,7 +45,8 @@ type // TRustMapsAPI Class
   { API Methods }
     // Maps
     function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
-    function GetMap(const MapID: string): TRMAPIResponse<TRMGetMapResponse>;
+    function GetMap(const MapID: string): TRMAPIResponse<TRMGetMapResponse>; overload;
+    function GetMap(const Seed, Size: Integer; const Staging: boolean): TRMAPIResponse<TRMGetMapResponse>; overload;
   published
   { Published Properties }
     property APIKey: string read FAPIKey write FAPIKey;
@@ -94,6 +95,7 @@ begin
     // Parsed Data
     if rest.Response.StatusCode = 200 then // Map Exists and data was returned
     begin
+      Result.ParsedData.MapID := rest.Response.JSONValue.GetValue<string>('data.id');
       Result.ParsedData.MapType := rest.Response.JSONValue.GetValue<string>('data.type');
       Result.ParsedData.Seed := rest.Response.JSONValue.GetValue<Integer>('data.seed');
       Result.ParsedData.Size := rest.Response.JSONValue.GetValue<Integer>('data.size');
@@ -107,6 +109,65 @@ begin
       Result.ParsedData.CanDownload := rest.Response.JSONValue.GetValue<Boolean>('data.canDownload');
       Result.ParsedData.DownloadURL := rest.Response.JSONValue.GetValue<string>('data.downloadUrl');
       Result.ParsedData.TotalMonuments := rest.Response.JSONValue.GetValue<Integer>('data.totalMonuments');
+      Result.ParsedData.LandPercentageOfMap := rest.Response.JSONValue.GetValue<Integer>('data.landPercentageOfMap');
+      Result.ParsedData.IslandsCount := rest.Response.JSONValue.GetValue<Integer>('data.islands');
+      Result.ParsedData.MountainCount := rest.Response.JSONValue.GetValue<Integer>('data.mountains');
+      Result.ParsedData.IceLakeCount := rest.Response.JSONValue.GetValue<Integer>('data.iceLakes');
+      Result.ParsedData.RiverCount := rest.Response.JSONValue.GetValue<Integer>('data.rivers');
+
+      Result.HasParsedData := True;
+    end;
+  finally
+    rest.Free;
+  end;
+end;
+
+function TRustMapsAPI.GetMap(const Seed, Size: Integer; const Staging: boolean): TRMAPIResponse<TRMGetMapResponse>;
+begin
+  Result.HasParsedData := False;
+
+  var rest := Self.SetupRest;
+  try
+    { Setup }
+    rest.Resource := '/v4/maps/{size}/{seed}';
+    rest.Method := TRESTRequestMethod.rmGET;
+
+    // Params
+    rest.AddParameter('size', Size.ToString, TRESTRequestParameterKind.pkURLSEGMENT);
+    rest.AddParameter('seed', Seed.ToString, TRESTRequestParameterKind.pkURLSEGMENT);
+    rest.AddParameter('staging', BoolToStr(Staging, True), TRESTRequestParameterKind.pkQUERY);
+
+    { Execute }
+    rest.Execute;
+
+    { Response }
+    Result.RateLimit := Self.ParseRateLimitHeaders(rest.Response.Headers);
+    Result.RawData := rest.Response.Content;
+    Result.StatusCode := rest.Response.StatusCode;
+    Result.StatusText := rest.Response.StatusText;
+
+    // Parsed Data
+    if rest.Response.StatusCode = 200 then // Map Exists and data was returned
+    begin
+      Result.ParsedData.MapID := rest.Response.JSONValue.GetValue<string>('data.id');
+      Result.ParsedData.MapType := rest.Response.JSONValue.GetValue<string>('data.type');
+      Result.ParsedData.Seed := rest.Response.JSONValue.GetValue<Integer>('data.seed');
+      Result.ParsedData.Size := rest.Response.JSONValue.GetValue<Integer>('data.size');
+      Result.ParsedData.URL := rest.Response.JSONValue.GetValue<string>('data.url');
+      Result.ParsedData.RawImageURL := rest.Response.JSONValue.GetValue<string>('data.rawImageUrl');
+      Result.ParsedData.ImageURL := rest.Response.JSONValue.GetValue<string>('data.imageUrl');
+      Result.ParsedData.ImageIconURL := rest.Response.JSONValue.GetValue<string>('data.imageIconUrl');
+      Result.ParsedData.ThumbnailURL := rest.Response.JSONValue.GetValue<string>('data.thumbnailUrl');
+      Result.ParsedData.IsStaging := rest.Response.JSONValue.GetValue<Boolean>('data.isStaging');
+      Result.ParsedData.IsCustomMap := rest.Response.JSONValue.GetValue<Boolean>('data.isCustomMap');
+      Result.ParsedData.CanDownload := rest.Response.JSONValue.GetValue<Boolean>('data.canDownload');
+      Result.ParsedData.DownloadURL := rest.Response.JSONValue.GetValue<string>('data.downloadUrl');
+      Result.ParsedData.TotalMonuments := rest.Response.JSONValue.GetValue<Integer>('data.totalMonuments');
+      Result.ParsedData.LandPercentageOfMap := rest.Response.JSONValue.GetValue<Integer>('data.landPercentageOfMap');
+      Result.ParsedData.IslandsCount := rest.Response.JSONValue.GetValue<Integer>('data.islands');
+      Result.ParsedData.MountainCount := rest.Response.JSONValue.GetValue<Integer>('data.mountains');
+      Result.ParsedData.IceLakeCount := rest.Response.JSONValue.GetValue<Integer>('data.iceLakes');
+      Result.ParsedData.RiverCount := rest.Response.JSONValue.GetValue<Integer>('data.rivers');
 
       Result.HasParsedData := True;
     end;

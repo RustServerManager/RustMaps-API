@@ -13,6 +13,7 @@ type // RequestMapGeneration Response
 
 type // GetMap Response
   TRMGetMapResponse = record
+    MapID: string;
     MapType: string;
     Seed: Integer;
     Size: Integer;
@@ -26,6 +27,11 @@ type // GetMap Response
     CanDownload: Boolean;
     DownloadURL: string;
     TotalMonuments: Integer;
+    LandPercentageOfMap: Integer;
+    IslandsCount: Integer;
+    MountainCount: Integer;
+    IceLakeCount: Integer;
+    RiverCount: Integer;
   end;
 
 implementation
