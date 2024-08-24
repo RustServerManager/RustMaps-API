@@ -42,6 +42,33 @@ begin
     Writeln(res.StatusText);
     Writeln(res.RawData);
     Writeln(res.ParsedData.URL);
+
+    Writeln('');
+    Writeln(res.RateLimit.RateLimit);
+    Writeln(res.RateLimit.RateLimitRemaining);
+    Writeln(DateTimeToStr(res.RateLimit.RateLimitReset));
+  finally
+    api.Free;
+  end;
+end;
+
+procedure GetMapBySizeSeed;
+begin
+  var api := TRustMapsAPI.Create;
+  try
+    api.APIKey := API_KEY;
+
+    var res := api.GetMap(1495858156, 4000, False);
+
+    Writeln(res.StatusCode.ToString);
+    Writeln(res.StatusText);
+    Writeln(res.RawData);
+    Writeln(res.ParsedData.URL);
+
+    Writeln('');
+    Writeln(res.RateLimit.RateLimit);
+    Writeln(res.RateLimit.RateLimitRemaining);
+    Writeln(DateTimeToStr(res.RateLimit.RateLimitReset));
   finally
     api.Free;
   end;
@@ -49,7 +76,7 @@ end;
 
 procedure Main;
 begin
-  GetMapByID;
+  GetMapBySizeSeed;
 end;
 
 begin
