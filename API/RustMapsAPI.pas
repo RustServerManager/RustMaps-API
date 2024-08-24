@@ -7,7 +7,8 @@ uses
 
 type // Generic Response Type
   TRMAPIResponse<T> = record
-    Data: T;
+    HasParsedData: Boolean;
+    ParsedData: T;
     RawData: string;
     StatusCode: Integer;
     StatusText: string;
@@ -33,7 +34,7 @@ type // TRustMapsAPI Class
   { API Methods }
     // Maps
     function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
-    function GetMap(const MapID: string): TRMAPIResponse<string>;
+    function GetMap(const MapID: string): TRMAPIResponse<TRMGetMapResponse>;
   published
   { Published Properties }
     property APIKey: string read FAPIKey write FAPIKey;
@@ -57,8 +58,10 @@ begin
     FAPIKey := APIKey;
 end;
 
-function TRustMapsAPI.GetMap(const MapID: string): TRMAPIResponse<string>;
+function TRustMapsAPI.GetMap(const MapID: string): TRMAPIResponse<TRMGetMapResponse>;
 begin
+  Result.HasParsedData := False;
+
   var rest := Self.SetupRest;
   try
     { Setup }
@@ -73,9 +76,28 @@ begin
 
     { Response }
     Result.RawData := rest.Response.Content;
-    Result.Data := rest.Response.Content;
     Result.StatusCode := rest.Response.StatusCode;
     Result.StatusText := rest.Response.StatusText;
+
+    // Parsed Data
+    if rest.Response.StatusCode = 200 then // Map Exists and data was returned
+    begin
+      Result.ParsedData.MapType := rest.Response.JSONValue.GetValue<string>('data.type');
+      Result.ParsedData.Seed := rest.Response.JSONValue.GetValue<Integer>('data.seed');
+      Result.ParsedData.Size := rest.Response.JSONValue.GetValue<Integer>('data.size');
+      Result.ParsedData.URL := rest.Response.JSONValue.GetValue<string>('data.url');
+      Result.ParsedData.RawImageURL := rest.Response.JSONValue.GetValue<string>('data.rawImageUrl');
+      Result.ParsedData.ImageURL := rest.Response.JSONValue.GetValue<string>('data.imageUrl');
+      Result.ParsedData.ImageIconURL := rest.Response.JSONValue.GetValue<string>('data.imageIconUrl');
+      Result.ParsedData.ThumbnailURL := rest.Response.JSONValue.GetValue<string>('data.thumbnailUrl');
+      Result.ParsedData.IsStaging := rest.Response.JSONValue.GetValue<Boolean>('data.isStaging');
+      Result.ParsedData.IsCustomMap := rest.Response.JSONValue.GetValue<Boolean>('data.isCustomMap');
+      Result.ParsedData.CanDownload := rest.Response.JSONValue.GetValue<Boolean>('data.canDownload');
+      Result.ParsedData.DownloadURL := rest.Response.JSONValue.GetValue<string>('data.downloadUrl');
+      Result.ParsedData.TotalMonuments := rest.Response.JSONValue.GetValue<Integer>('data.totalMonuments');
+
+      Result.HasParsedData := True;
+    end;
   finally
     rest.Free;
   end;
@@ -83,6 +105,8 @@ end;
 
 function TRustMapsAPI.RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
 begin
+  Result.HasParsedData := False;
+
   var rest := Self.SetupRest;
   try
     { Setup }
@@ -115,14 +139,22 @@ begin
     Result.StatusText := rest.Response.StatusText;
 
     // Parsed Data
-    if rest.Response.StatusCode = 201 then
+    if rest.Response.StatusCode = 201 then  // Map generation request successful
     begin
-      Result.Data.MapID := rest.Response.JSONValue.GetValue<string>('data.mapid');
-      Result.Data.QueuePosition := rest.Response.JSONValue.GetValue<Integer>('data.mapid');
-      Result.Data.State := rest.Response.JSONValue.GetValue<string>('data.state');
+      Result.ParsedData.MapID := rest.Response.JSONValue.GetValue<string>('data.mapid');
+      Result.ParsedData.QueuePosition := rest.Response.JSONValue.GetValue<Integer>('data.mapid');
+      Result.ParsedData.State := rest.Response.JSONValue.GetValue<string>('data.state');
+
+      Result.HasParsedData := True;
     end
-    else if rest.Response.StatusCode = 409 then
-      Result.Data.MapID := rest.Response.JSONValue.GetValue<string>('data.id');
+    else if rest.Response.StatusCode = 409 then // Map already exists, but is not ready yet
+    begin
+      Result.ParsedData.MapID := rest.Response.JSONValue.GetValue<string>('data.id');
+      Result.ParsedData.QueuePosition := -1;
+      Result.ParsedData.State := '';
+
+      Result.HasParsedData := True;
+    end;
   finally
     rest.Free;
   end;
