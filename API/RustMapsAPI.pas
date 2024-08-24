@@ -3,15 +3,25 @@ unit RustMapsAPI;
 interface
 
 uses
-  System.SysUtils, REST.Client, Rest.Types, RustMapsAPI.Types;
+  System.SysUtils, System.DateUtils, System.Classes, REST.Client, Rest.Types,
+  RustMapsAPI.Types;
+
+type // Rate Limit Response
+  TRMRateLimit = record
+    RateLimit: string;
+    RateLimitRemaining: Integer;
+    RateLimitReset: TDateTime;
+  end;
 
 type // Generic Response Type
   TRMAPIResponse<T> = record
+  public
     HasParsedData: Boolean;
     ParsedData: T;
     RawData: string;
     StatusCode: Integer;
     StatusText: string;
+    RateLimit: TRMRateLimit;
   end;
 
 type // TRustMapsAPI Class
@@ -27,6 +37,7 @@ type // TRustMapsAPI Class
   private
   { Private Methods }
     function SetupRest: TRESTRequest;
+    function ParseRateLimitHeaders(const Headers: TStrings): TRMRateLimit;
   public
   { Public Methods }
     constructor Create(const APIKey: string = '');
@@ -75,6 +86,7 @@ begin
     rest.Execute;
 
     { Response }
+    Result.RateLimit := Self.ParseRateLimitHeaders(rest.Response.Headers);
     Result.RawData := rest.Response.Content;
     Result.StatusCode := rest.Response.StatusCode;
     Result.StatusText := rest.Response.StatusText;
@@ -101,6 +113,13 @@ begin
   finally
     rest.Free;
   end;
+end;
+
+function TRustMapsAPI.ParseRateLimitHeaders(const Headers: TStrings): TRMRateLimit;
+begin
+  Result.RateLimit := Headers.Values['x-rate-limit-limit'];
+  Result.RateLimitRemaining := Headers.Values['x-rate-limit-remaining'].ToInteger;
+  Result.RateLimitReset := ISO8601ToDate(Headers.Values['x-rate-limit-reset'], True);
 end;
 
 function TRustMapsAPI.RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
@@ -134,6 +153,7 @@ begin
     rest.Execute;
 
     { Response }
+    Result.RateLimit := Self.ParseRateLimitHeaders(rest.Response.Headers);
     Result.RawData := rest.Response.Content;
     Result.StatusCode := rest.Response.StatusCode;
     Result.StatusText := rest.Response.StatusText;
