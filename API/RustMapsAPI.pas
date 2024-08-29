@@ -30,9 +30,11 @@ type // TRustMapsAPI Class
   { Private Const }
     const
       API_BASEURL = 'https://api.rustmaps.com';
+      DEFAULT_USERAGENT = 'RustMapsDelphiAPI/1.0';
   private
   { Private Variables }
     FAPIKey: string;
+    FUserAgent: string;
     FTimeout: Integer;
   private
   { Private Methods }
@@ -50,6 +52,7 @@ type // TRustMapsAPI Class
   published
   { Published Properties }
     property APIKey: string read FAPIKey write FAPIKey;
+    property UserAgent: string read FUserAgent write FUserAgent;
     property Timeout: Integer read FTimeout write FTimeout;
   end;
 
@@ -249,12 +252,13 @@ begin
   Result.Response := TRESTResponse.Create(Result);
 
   // Setup
-  Result.Client.BaseURL := API_BASEURL;
+  Result.Client.BaseURL := SELF.API_BASEURL;
   Result.Client.RaiseExceptionOn500 := False;
-  Result.Timeout := FTimeout;
+  Result.Timeout := Self.FTimeout;
+  Result.Client.UserAgent := Self.FUserAgent;
 
   // Auth
-  Result.AddParameter('X-API-Key', FAPIKey, TRESTRequestParameterKind.pkHTTPHEADER);
+  Result.AddParameter('X-API-Key', Self.FAPIKey, TRESTRequestParameterKind.pkHTTPHEADER);
 end;
 
 end.
