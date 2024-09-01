@@ -36,6 +36,7 @@ type // TRustMapsAPI Class
     FAPIKey: string;
     FUserAgent: string;
     FTimeout: Integer;
+    FOrgeID: string;
   private
   { Private Methods }
     function SetupRest: TRESTRequest;
@@ -56,6 +57,7 @@ type // TRustMapsAPI Class
     property APIKey: string read FAPIKey write FAPIKey;
     property UserAgent: string read FUserAgent write FUserAgent;
     property Timeout: Integer read FTimeout write FTimeout;
+    property OrgID: string read FOrgeID write FOrgeID;
   end;
 
 implementation
@@ -294,6 +296,12 @@ begin
 
   // Auth
   Result.AddParameter('X-API-Key', Self.FAPIKey, TRESTRequestParameterKind.pkHTTPHEADER);
+
+  // OrgID
+  if not Self.FOrgeID.Trim.IsEmpty then
+  begin
+    Result.AddParameter('x-org-id', Self.FOrgeID, TRESTRequestParameterKind.pkHTTPHEADER);
+  end;
 end;
 
 end.
