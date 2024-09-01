@@ -34,6 +34,19 @@ type // GetMap Response
     RiverCount: Integer;
   end;
 
+type // Get Map Gen Limits
+  TRMGetMapGenLimitsResponse = record
+  private
+    type
+      TRMMapGenLimits = record
+        Current: Integer;
+        Allowed: Integer;
+      end;
+  public
+    ConCurrent: TRMMapGenLimits;
+    Monthly: TRMMapGenLimits;
+  end;
+
 implementation
 
 end.

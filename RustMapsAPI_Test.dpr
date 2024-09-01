@@ -12,6 +12,33 @@ uses
 const
   API_KEY = '';
 
+procedure GetMapGenLimits;
+begin
+  var api := TRustMapsAPI.Create;
+  try
+    api.APIKey := API_KEY;
+
+    var resp := api.GetMapGenLimits;
+
+    if resp.HasParsedData then
+    begin
+      Writeln('-- ConCurrent --');
+      Writeln('Current: ', resp.ParsedData.ConCurrent.Current);
+      Writeln('Allowed: ', resp.ParsedData.ConCurrent.Allowed);
+      Writeln('');
+      Writeln('-- Monthly --');
+      Writeln('Current: ', resp.ParsedData.Monthly.Current);
+      Writeln('Allowed: ', resp.ParsedData.Monthly.Allowed);
+    end
+    else
+    begin
+      Writeln(resp.RawData);
+    end;
+  finally
+    api.Free;
+  end;
+end;
+
 procedure RequestMapGen;
 begin
   var api := TRustMapsAPI.Create;
@@ -123,7 +150,7 @@ end;
 
 procedure Main;
 begin
-  GetMapBySizeSeed;
+  GetMapGenLimits;
 end;
 
 begin

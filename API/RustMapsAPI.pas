@@ -49,6 +49,8 @@ type // TRustMapsAPI Class
     function RequestMapGeneration(const Size, Seed: Integer; const Staging: boolean): TRMAPIResponse<TRMReqMapGenResponse>;
     function GetMap(const MapID: string): TRMAPIResponse<TRMGetMapResponse>; overload;
     function GetMap(const Seed, Size: Integer; const Staging: boolean): TRMAPIResponse<TRMGetMapResponse>; overload;
+    // Misc
+    function GetMapGenLimits: TRMAPIResponse<TRMGetMapGenLimitsResponse>;
   published
   { Published Properties }
     property APIKey: string read FAPIKey write FAPIKey;
@@ -171,6 +173,39 @@ begin
       Result.ParsedData.MountainCount := rest.Response.JSONValue.GetValue<Integer>('data.mountains');
       Result.ParsedData.IceLakeCount := rest.Response.JSONValue.GetValue<Integer>('data.iceLakes');
       Result.ParsedData.RiverCount := rest.Response.JSONValue.GetValue<Integer>('data.rivers');
+
+      Result.HasParsedData := True;
+    end;
+  finally
+    rest.Free;
+  end;
+end;
+
+function TRustMapsAPI.GetMapGenLimits: TRMAPIResponse<TRMGetMapGenLimitsResponse>;
+begin
+  Result.HasParsedData := False;
+
+  var rest := Self.SetupRest;
+  try
+    rest.Resource := '/v4/maps/limits';
+    rest.Method := TRESTRequestMethod.rmGET;
+
+    rest.Execute;
+
+    Result.RateLimit := Self.ParseRateLimitHeaders(rest.Response.Headers);
+    Result.RawData := rest.Response.Content;
+    Result.StatusCode := rest.Response.StatusCode;
+    Result.StatusText := rest.Response.StatusText;
+
+    if rest.Response.StatusCode = 200 then
+    begin
+      // Concurrent
+      Result.ParsedData.ConCurrent.Current := rest.Response.JSONValue.GetValue<Integer>('data.concurrent.current');
+      Result.ParsedData.ConCurrent.Allowed := rest.Response.JSONValue.GetValue<Integer>('data.concurrent.allowed');
+
+      // Monthly
+      Result.ParsedData.Monthly.Current := rest.Response.JSONValue.GetValue<Integer>('data.monthly.current');
+      Result.ParsedData.Monthly.Allowed := rest.Response.JSONValue.GetValue<Integer>('data.monthly.allowed');
 
       Result.HasParsedData := True;
     end;
